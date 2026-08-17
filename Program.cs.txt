@@ -1,0 +1,278 @@
+﻿
+using System;
+using System.Collections.Generic;
+
+namespace SistemaGestionPacientes
+{
+    class Program
+    {
+        private static GestorPacientes gestor = new GestorPacientes();
+
+        static void Main(string[] args)
+        {
+            bool salir = false;
+
+            while (!salir)
+            {
+                Console.Clear();
+                Console.WriteLine("=================================================");
+                Console.WriteLine("    SISTEMA DE GESTIÓN DE PACIENTES - CLÍNICA    ");
+                Console.WriteLine("=================================================");
+                Console.WriteLine("1. Registrar nuevo paciente");
+                Console.WriteLine("2. Listar todos los pacientes");
+                Console.WriteLine("3. Buscar paciente por ID o nombre");
+                Console.WriteLine("4. Actualizar datos de un paciente");
+                Console.WriteLine("5. Eliminar un paciente");
+                Console.WriteLine("6. Salir del sistema");
+                Console.WriteLine("=================================================");
+                Console.Write("Seleccione una opción (1-6): ");
+
+                string opcion = Console.ReadLine();
+
+                switch (opcion)
+                {
+                    case "1":
+                        EjecutarTransaccion(MenuRegistrar, "¿Desea registrar otro paciente?");
+                        break;
+                    case "2":
+                        EjecutarTransaccion(MenuListar, "¿Desea consultar la lista nuevamente?");
+                        break;
+                    case "3":
+                        EjecutarTransaccion(MenuBuscar, "¿Desea realizar otra búsqueda?");
+                        break;
+                    case "4":
+                        EjecutarTransaccion(MenuActualizar, "¿Desea actualizar otro paciente?");
+                        break;
+                    case "5":
+                        EjecutarTransaccion(MenuEliminar, "¿Desea eliminar otro paciente?");
+                        break;
+                    case "6":
+                        salir = true;
+                        Console.WriteLine("\nSaliendo del sistema... ¡Hasta luego!");
+                        break;
+                    default:
+                        Console.WriteLine("\n[Error] Opción no válida. Presione cualquier tecla para continuar...");
+                        Console.ReadKey();
+                        break;
+                }
+            }
+        }
+
+        private static void EjecutarTransaccion(Action accion, string mensajePregunta)
+        {
+            bool repetir = true;
+            while (repetir)
+            {
+                Console.Clear();
+                accion();
+
+                Console.Write($"\n{mensajePregunta} (S/N): ");
+                string respuesta = Console.ReadLine().Trim().ToUpper();
+
+                if (respuesta != "S")
+                {
+                    repetir = false;
+                }
+            }
+        }
+
+        static void MenuRegistrar()
+        {
+            Console.WriteLine("--- REGISTRO DE PACIENTE ---");
+
+            string id;
+            do
+            {
+                id = LeerTextoObligatorio("Cédula / ID Único: ");
+                if (gestor.ExisteId(id))
+                {
+                    Console.WriteLine("[Error] Ya existe un paciente registrado con este ID. Intente con otro.");
+                }
+            } while (gestor.ExisteId(id));
+
+            string nombre = LeerTextoObligatorio("Nombre Completo: ");
+            int edad = LeerEnteroValido("Edad: ");
+            string sexo = LeerTextoObligatorio("Sexo (M/F/Otro): ");
+            string diagnostico = LeerTextoObligatorio("Diagnóstico: ");
+            DateTime fechaIngreso = DateTime.Now;
+
+            Paciente nuevo = new Paciente(id, nombre, edad, sexo, diagnostico, fechaIngreso);
+
+            if (gestor.RegistrarPaciente(nuevo))
+            {
+                Console.WriteLine("\n[Éxito] Paciente registrado correctamente.");
+            }
+            else
+            {
+                Console.WriteLine("\n[Error] No se pudo registrar el paciente.");
+            }
+        }
+
+        static void MenuListar()
+        {
+            Console.WriteLine("--- LISTA GENERAL DE PACIENTES ---");
+            List<Paciente> lista = gestor.ObtenerTodos();
+
+            if (lista.Count == 0)
+            {
+                Console.WriteLine("No hay pacientes registrados en el sistema.");
+                return;
+            }
+
+            foreach (var p in lista)
+            {
+                Console.WriteLine(p.ToString());
+            }
+            Console.WriteLine($"Total de pacientes: {lista.Count}");
+        }
+
+        static void MenuBuscar()
+        {
+            Console.WriteLine("--- BÚSQUEDA DE PACIENTES ---");
+            Console.WriteLine("1. Buscar por ID");
+            Console.WriteLine("2. Buscar por Nombre");
+            Console.Write("Seleccione tipo de búsqueda (1-2): ");
+            string subOpcion = Console.ReadLine();
+
+            if (subOpcion == "1")
+            {
+                string id = LeerTextoObligatorio("Ingrese el ID a buscar: ");
+                Paciente p = gestor.BuscarPorId(id);
+                if (p != null)
+                {
+                    Console.WriteLine("\nPaciente encontrado:\n");
+                    Console.WriteLine(p.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("\n[Información] No se encontró ningún paciente con ese ID.");
+                }
+            }
+            else if (subOpcion == "2")
+            {
+                string nombre = LeerTextoObligatorio("Ingrese el nombre o texto a buscar: ");
+                List<Paciente> resultados = gestor.BuscarPorNombre(nombre);
+
+                if (resultados.Count > 0)
+                {
+                    Console.WriteLine($"\nSe encontraron {resultados.Count} paciente(s):\n");
+                    foreach (var p in resultados)
+                    {
+                        Console.WriteLine(p.ToString());
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\n[Información] No se encontraron coincidencias.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[Error] Opción de búsqueda no válida.");
+            }
+        }
+
+        static void MenuActualizar()
+        {
+            Console.WriteLine("--- ACTUALIZAR DATOS DE PACIENTE ---");
+            string id = LeerTextoObligatorio("Ingrese el ID del paciente a modificar: ");
+
+            Paciente p = gestor.BuscarPorId(id);
+            if (p == null)
+            {
+                Console.WriteLine("\n[Error] No se encontró un paciente con el ID ingresado.");
+                return;
+            }
+
+            Console.WriteLine("\nDatos actuales del paciente:");
+            Console.WriteLine(p.ToString());
+
+            Console.WriteLine("Ingrese los nuevos datos:");
+            string nuevoNombre = LeerTextoObligatorio("Nuevo Nombre Completo: ");
+            int nuevaEdad = LeerEnteroValido("Nueva Edad: ");
+            string nuevoSexo = LeerTextoObligatorio("Nuevo Sexo: ");
+            string nuevoDiagnostico = LeerTextoObligatorio("Nuevo Diagnóstico: ");
+
+            if (gestor.ActualizarPaciente(id, nuevoNombre, nuevaEdad, nuevoSexo, nuevoDiagnostico))
+            {
+                Console.WriteLine("\n[Éxito] Los datos del paciente han sido actualizados.");
+            }
+            else
+            {
+                Console.WriteLine("\n[Error] No se pudo realizar la actualización.");
+            }
+        }
+
+        static void MenuEliminar()
+        {
+            Console.WriteLine("--- ELIMINAR PACIENTE ---");
+            string id = LeerTextoObligatorio("Ingrese el ID del paciente que desea eliminar: ");
+
+            Paciente p = gestor.BuscarPorId(id);
+            if (p == null)
+            {
+                Console.WriteLine("\n[Error] No existe ningún paciente con el ID especificado.");
+                return;
+            }
+
+            Console.WriteLine("\nPaciente a eliminar:");
+            Console.WriteLine(p.ToString());
+
+            Console.Write("¿Está seguro de que desea eliminar a este paciente? (S/N): ");
+            string confirmacion = Console.ReadLine().Trim().ToUpper();
+
+            if (confirmacion == "S")
+            {
+                if (gestor.EliminarPaciente(id))
+                {
+                    Console.WriteLine("\n[Éxito] Paciente eliminado del sistema.");
+                }
+                else
+                {
+                    Console.WriteLine("\n[Error] No se pudo eliminar al paciente.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("\n[Operación Cancelada] El paciente no ha sido eliminado.");
+            }
+        }
+
+        private static string LeerTextoObligatorio(string mensaje)
+        {
+            string entrada;
+            do
+            {
+                Console.Write(mensaje);
+                entrada = Console.ReadLine()?.Trim();
+                if (string.IsNullOrEmpty(entrada))
+                {
+                    Console.WriteLine("[Error] Este campo es obligatorio. Reintente.");
+                }
+            } while (string.IsNullOrEmpty(entrada));
+
+            return entrada;
+        }
+
+        private static int LeerEnteroValido(string mensaje)
+        {
+            int numero;
+            string entrada;
+            do
+            {
+                Console.Write(mensaje);
+                entrada = Console.ReadLine();
+                if (!int.TryParse(entrada, out numero) || numero < 0 || numero > 120)
+                {
+                    Console.WriteLine("[Error] Ingrese un valor numérico válido (entre 0 y 120).");
+                }
+                else
+                {
+                    break;
+                }
+            } while (true);
+
+            return numero;
+        }
+    }
+}

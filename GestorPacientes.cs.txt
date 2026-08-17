@@ -1,0 +1,68 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace SistemaGestionPacientes
+{
+    public class GestorPacientes
+    {
+        private List<Paciente> listaPacientes = new List<Paciente>();
+
+   
+        public bool ExisteId(string id)
+        {
+            return listaPacientes.Exists(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool RegistrarPaciente(Paciente paciente)
+        {
+            if (ExisteId(paciente.Id))
+            {
+                return false; // Error: ID duplicado
+            }
+            listaPacientes.Add(paciente);
+            return true;
+        }
+
+        // --- LISTAR Y BUSCAR (READ) ---
+        public List<Paciente> ObtenerTodos()
+        {
+            return listaPacientes;
+        }
+
+        public Paciente BuscarPorId(string id)
+        {
+            return listaPacientes.Find(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public List<Paciente> BuscarPorNombre(string criterio)
+        {
+            return listaPacientes.FindAll(p => p.NombreCompleto.ToLower().Contains(criterio.ToLower()));
+        }
+
+        // --- ACTUALIZAR (UPDATE) ---
+        public bool ActualizarPaciente(string id, string nuevoNombre, int nuevaEdad, string nuevoSexo, string nuevoDiagnostico)
+        {
+            Paciente paciente = BuscarPorId(id);
+            if (paciente != null)
+            {
+                paciente.NombreCompleto = nuevoNombre;
+                paciente.Edad = nuevaEdad;
+                paciente.Sexo = nuevoSexo;
+                paciente.Diagnostico = nuevoDiagnostico;
+                return true;
+            }
+            return false;
+        }
+
+        // --- ELIMINAR (DELETE) ---
+        public bool EliminarPaciente(string id)
+        {
+            Paciente paciente = BuscarPorId(id);
+            if (paciente != null)
+            {
+                return listaPacientes.Remove(paciente);
+            }
+            return false;
+        }
+    }
+}
