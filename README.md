@@ -7,7 +7,8 @@
 
 * **Manuel M. Rijo**
   Matrícula: **25-SSON-2-006**
-
+* **Geily Espinosa
+  Matricula: **25-SISN-2-045**
 ---
 
 ## Descripción breve
